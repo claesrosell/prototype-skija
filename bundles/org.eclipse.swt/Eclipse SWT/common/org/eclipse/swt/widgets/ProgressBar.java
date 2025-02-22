@@ -50,6 +50,10 @@ public class ProgressBar extends Control implements ICustomWidget {
 	private int maximum = 100;
 	private int selection = 0;
 
+	private int visualizationValue;
+	private int lastVisualizationTimeStamp = -1;
+	private int animationValueSpeed = 4;
+
 
 /**
  * Constructs a new instance of this class given its parent
@@ -359,21 +363,52 @@ private void doPaint(GC gc) {
 	if (r.width == 0 && r.height == 0) {
 		return;
 	}
-	gc.setForeground(getDisplay().getSystemColor(SWT.COLOR_CYAN));
-	gc.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
-	int xPos = r.x;
-	int yPos = r.y;
+
+	int barMargin = 0;
+	int borderWidth = 1;
+
+	int xPos = 0;
+	int yPos = 0;
 	int width = r.width;
 	int height = r.height;
 
-	float visualizationValue = this.selection;
-	float size = visualizationValue / (this.maximum - this.minimum);
+
+	// First we paint the background.
+	gc.setBackground(getDisplay().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+	gc.fillRectangle(0, 0, width, height);
+
+	// and the border
+	gc.setBackground(getDisplay().getSystemColor(SWT.COLOR_WIDGET_BORDER));
+	gc.setLineWidth(borderWidth);
+	gc.drawRectangle(borderWidth / 2, borderWidth / 2, width - borderWidth, height - borderWidth);
+
+	// Then we should draw the actual progress.
+	gc.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
+
+	float startValue = 0f;
+	int deltaValue = this.selection - this.visualizationValue;
+	if (deltaValue > 0) {
+		this.visualizationValue = this.visualizationValue
+				+ (deltaValue > this.animationValueSpeed ? this.animationValueSpeed : deltaValue);
+	} else if (deltaValue < 0) {
+		this.visualizationValue = this.visualizationValue
+				- (-deltaValue > this.animationValueSpeed ? this.animationValueSpeed : deltaValue);
+	}
+
+	float size = (float) this.selection / (this.maximum - this.minimum);
+
+	int barStartXPos = xPos + borderWidth + barMargin;
+	int barStartYPos = yPos + borderWidth + barMargin;
+	int barAvailableWidth = width - 2 * (borderWidth + barMargin);
+	int barAvailableHeight = height - 2 * (borderWidth + barMargin);
+
 	if ((style & SWT.VERTICAL) != 0) {
-		gc.fillRectangle(0, 0, width, (int) (height * size));
+		gc.fillRectangle(barStartYPos, barStartXPos, barAvailableWidth, (int) (barAvailableHeight * size));
 	} else {
 		// Horizontal
-		gc.fillRectangle(0, 0, (int) (width * size), height);
+		gc.fillRectangle(barStartXPos, barStartYPos, (int) (barAvailableWidth * size), barAvailableHeight);
 	}
+
 }
 
 }
